@@ -60,68 +60,149 @@
             const $monsterHp = document.querySelector('#monster-hp');
             const $monsterAtt = document.querySelector('#monster-att');
             const $message = document.querySelector('#message');
-            
-            const hero = {
-                name: '',
-                lev: 1,
-                maxHp: 100,
-                hp: 100,
-                xp: 0,
-                att: 10,
-            };
-            let monster = null;
-            const monsterList = [
-                { name: '슬라임', hp: 25, att: 10, xp: 10 },
-                { name: '스켈레톤', hp: 50, att: 15, xp: 20 },
-                { name: '마왕', hp: 150, att: 35, xp: 50 },
-            ];
 
+            class Game {
+                constructor(name) {
+                    this.monster = null;
+                    this.hero = null;
+                    this.monsterList = [
+                        { name: '슬라임', hp: 25, att: 10, xp: 10 },
+                        { name: '스켈레톤', hp: 50, att: 15, xp: 20 },
+                        { name: '마왕', hp: 150, att: 35, xp: 50 },
+                    ];
+                    this.start(name);
+                }
+                start(name) {
+                    $gameMenu.addEventListener('submit', this.onGameMenuInput);
+                    $battleMenu.addEventListener('submit', this.onBattleMenuInput);
+                    this.changeScreen('game');
+                    this.hero = new Hero(this, name);
+                    this.updateHeroStat();
+                }
+                changeScreen(screen) {
+                    if (screen === 'start') {
+                        $startScreen.style.display = 'block'
+                        $gameMenu.style.display = 'none'; 
+                        $battleMenu.style.display = 'none';
+                    } else if (screen === 'game') {
+                        $startScreen.style.display = 'none'
+                        $gameMenu.style.display = 'block';
+                        $battleMenu.style.display = 'none';
+                    } else if (screen === 'battle') {
+                        $startScreen.style.display = 'none'
+                        $gameMenu.style.display = 'none';
+                        $battleMenu.style.display = 'block';
+                    }
+                }
+                onGameMenuInput = (e) => {
+                    e.preventDefault();
+                    const input = e.target['menu-input'].value;
+                    if (input === '1') { // 모험
+                        this.changeScreen('battle');
+                        const randomIndex = Math.floor(Math.random() * this.monsterList.length);
+                        const randomMonster = this.monsterList[randomIndex];
+                        this.monster = new Monster(
+                            this,
+                            randomMonster.name,
+                            randomMonster.hp,
+                            randomMonster.att,
+                            randomMonster.xp,
+                        );
+                        this.updateMonsterStat();
+                        this.showMessage(`몬스터와 마주쳤다. ${this.monster.name}인 것 같다!`)
+                    } else if (input === '2') { // 휴식
+                    } else if (input === '3') { // 도망
+                    }
+                }
+                onBattleMenuInput = (e) => {
+                    e.preventDefault();
+                    const input = e.target['battle-input'].value;
+                    if (input === '1') { // 공격
+                        const { hero, monster } = this;
+                        hero.attack(monster);
+                        monster.attack(hero);
+                        this.showMessage(`${hero.att}의 데미지를 주고, ${monster.att}의 데미지를 받았다.`);
+                        this.updateHeroStat();
+                        this.updateMonsterStat();
+                    } else if (input === '2') { // 회복
+                    } else if (input === '3') { // 도망
+                    }
+                }
+                updateHeroStat() {
+                    const { hero } = this;
+                    if (hero === null) {
+                        $heroName.textContent = '';
+                        $heroLevel.textContent = '';
+                        $heroHp.textContent = '';
+                        $heroXp.textContent = '';
+                        $heroAtt.textContent = '';
+                        return;
+                    }
+                    $heroName.textContent = hero.name;
+                    $heroLevel.textContent = `${hero.lev}Lev`;
+                    $heroHp.textContent = `HP: ${hero.hp}/${hero.maxHp}`;
+                    $heroXp.textContent = `XP: ${hero.xp}/${15 * hero.lev}`;
+                    $heroAtt.textContent = `ATT: ${hero.att}`;
+                }
+                updateMonsterStat() {
+                    const { monster } = this;
+                    if (monster === null) {
+                        $monsterName.textContent = '';
+                        $monsterHp.textContent = '';
+                        $monsterAtt.textContent = '';
+                        return;
+                    }
+                    $monsterName.textContent = monster.name;
+                    $monsterHp.textContent = `HP: ${monster.hp}/${monster.maxHp}`;
+                    $monsterAtt.textContent = `ATT: ${monster.att}`;
+                }
+                showMessage(text) {
+                    $message.textContent = text;
+                }
+            }
+
+            class Hero {
+                constructor(game, name) {
+                    this.game = game;
+                    this.name = name;
+                    this.lev = 1;
+                    this.maxHp = 100;
+                    this.hp = 100;
+                    this.xp = 0;
+                    this.att = 10;
+                }
+                attack(monster) {
+                    monster.hp -= this.att;
+                    this.hp -= monster.att;
+                }
+                heal(monster) {
+                    this.hp += 20;
+                    this.hp -= monster.att;
+                }
+            }
+
+            class Monster {
+                constructor(game, name, hp, att, xp) {
+                    this.game = game;
+                    this.name = name;
+                    this.maxHp = hp;
+                    this.hp = hp;
+                    this.att = att;
+                    this.xp = xp;
+                }
+                attack(target) {
+                    target.hp -= this.att;
+                }
+            }
+
+            let game = null;
             // start
             $startScreen.addEventListener('submit', (e) => {
                 event.preventDefault(); //새로고침 막기
                 const name = e.target['name-input'].value;
-                $startScreen.style.display = 'none'; // 스크린 감추고
-                $gameMenu.style.display = 'block'; // 메뉴 보이기
-                $heroName.textContent = name; // 입력한 이름으로
-
-                $heroLevel.textContent = `${hero.lev}Lev`; // 초기값
-                $heroHp.textContent = `HP: ${hero.hp}/${hero.maxHp}`; // 초기값
-                $heroXp.textContent = `XP: ${hero.xp}/${15 * hero.lev}`; // 초기값
-                $heroAtt.textContent = `ATT: ${hero.att}`;
-                hero.name = name; // 이름 저장
+                game = new Game(name);
             });
 
-            $gameMenu.addEventListener('submit', (e) => {
-                e.preventDefault();
-                const input = e.target['menu-input'].value; // 선택하는 번호
-                if (input === '1') { // 공격이면
-                    $gameMenu.style.display = 'none'; // 선택메뉴 감추고
-                    $battleMenu.style.display = 'block'; // 배틀메뉴 보이고
-                    
-                    // 랜덤 몬스터
-                    monster = JSON.parse( // string을 json으로
-                        // json을 string으로
-                        JSON.stringify(monsterList[Math.floor(Math.random() * monsterList.length)]) // list index random 추출
-                        /*
-                        JSON.parse와 JSON.stringify를 조합해서 사용하면 대상 객체를 깊은 복사할 수 있다.
-                        여기서 monsterList는 계속 재사용 되야 하므로 얕은복사로 객체가 계속 참조되면 안되므로
-                        깊은복사로 해줘야 한다.
-                        다만 성능상의 이슈와 함수, Math, Date와 같은 객체는 복사할 수 없기 때문에 실무에서는 lodash 같은 라이브러리를 사용한다고 함.
-
-                        *참고
-                        스프레드 문법은 얕은 복사이며,
-                        얕은 복사는 중첩된 객체가 있을 때 바깥 객체만 복사되고, 내부 객체는 참조 관계를 유지한다.
-                        때문에 객체의 속성을 새 객체에 할당할 때 사용한다.
-                        */
-                    );
-                    monster.maxHp = monster.hp;
-                    $monsterName.textContent = monster.name;
-                    $monsterHp.textContent = `HP: ${monster.hp}/${monster.maxHp}`;
-                    $monsterAtt.textContent = `ATT: ${monster.att}`;
-                } else if (input === '2') {
-                } else if (input === '3') {
-                }
-            });
         </script>
     </body>
 </html>

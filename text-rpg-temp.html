@@ -1,0 +1,151 @@
+<!DOCTYPE html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>텍스트 RPG</title>
+    </head>
+
+    <body>
+        <form id="start-screen">
+            <input id="name-input" placeholder="주인공 이름을 입력하세요!" />
+            <button id="start">시작</button>
+        </form>
+
+        <div id="screen">
+            <div id="hero-stat">
+                <span id="hero-name"></span>
+                <span id="hero-level"></span>
+                <span id="hero-hp"></span>
+                <span id="hero-xp"></span>
+                <span id="hero-att"></span>
+            </div>
+
+            <br>
+
+            <form id="game-menu" style="display: none;">
+                <div id="menu-1">1.모험</div>
+                <div id="menu-2">2.휴식</div>
+                <div id="menu-3">3.종료</div>
+                <input id="menu-input"/>
+                <button id="menu-button">입력</button>
+            </form>
+
+            <form id="battle-menu" style="display: none;">
+                <div id="battle-1">1.공격</div>
+                <div id="battle-2">2.회복</div>
+                <div id="battle-3">3.도망</div>
+                <input id="battle-input"/>
+                <button id="battle-button">입력</button>
+            </form>
+
+            <div id="message"></div>
+            <div id="monster-stat">
+                <span id="monster-name"></span>
+                <span id="monster-hp"></span>
+                <span id="monster-att"></span>
+            </div>
+        </div>
+
+        <!-------------------------------------------- script -------------------------------------->
+        <script>
+            const $startScreen = document.querySelector('#start-screen');
+            const $gameMenu = document.querySelector('#game-menu');
+            const $battleMenu = document.querySelector('#battle-menu');
+            const $heroName = document.querySelector('#hero-name');
+            
+            const $heroLevel = document.querySelector('#hero-level');
+            const $heroHp = document.querySelector('#hero-hp');
+            const $heroXp = document.querySelector('#hero-xp');
+            const $heroAtt = document.querySelector('#hero-att');
+            const $monsterName = document.querySelector('#monster-name');
+            const $monsterHp = document.querySelector('#monster-hp');
+            const $monsterAtt = document.querySelector('#monster-att');
+            const $message = document.querySelector('#message');
+            
+            const hero = {
+                name: '',
+                lev: 1,
+                maxHp: 100,
+                hp: 100,
+                xp: 0,
+                att: 10,
+                attack(monster) {
+                    monster.hp -= this.att;
+                    this.hp -= monster.att;
+                },
+                heal(monster) {
+                    this.hp += 20;
+                    this.hp -= monster.att;
+                }
+            };
+            let monster = null;
+            const monsterList = [
+                { name: '슬라임', hp: 25, att: 10, xp: 10 },
+                { name: '스켈레톤', hp: 50, att: 15, xp: 20 },
+                { name: '마왕', hp: 150, att: 35, xp: 50 },
+            ];
+
+            // start
+            $startScreen.addEventListener('submit', (e) => {
+                event.preventDefault(); //새로고침 막기
+                const name = e.target['name-input'].value;
+                $startScreen.style.display = 'none'; // 스크린 감추고
+                $gameMenu.style.display = 'block'; // 메뉴 보이기
+                $heroName.textContent = name; // 입력한 이름으로
+
+                $heroLevel.textContent = `${hero.lev}Lev`; // 초기값
+                $heroHp.textContent = `HP: ${hero.hp}/${hero.maxHp}`; // 초기값
+                $heroXp.textContent = `XP: ${hero.xp}/${15 * hero.lev}`; // 초기값
+                $heroAtt.textContent = `ATT: ${hero.att}`;
+                hero.name = name; // 이름 저장
+            });
+
+            $gameMenu.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const input = e.target['menu-input'].value; // 선택하는 번호
+                if (input === '1') { // 공격이면
+                    $gameMenu.style.display = 'none'; // 선택메뉴 감추고
+                    $battleMenu.style.display = 'block'; // 배틀메뉴 보이고
+                    
+                    // 랜덤 몬스터
+                    monster = JSON.parse( // string을 json으로
+                        // json을 string으로
+                        JSON.stringify(monsterList[Math.floor(Math.random() * monsterList.length)]) // list index random 추출
+                        /*
+                        JSON.parse와 JSON.stringify를 조합해서 사용하면 대상 객체를 깊은 복사할 수 있다.
+                        여기서 monsterList는 계속 재사용 되야 하므로 얕은복사로 객체가 계속 참조되면 안되므로
+                        깊은복사로 해줘야 한다.
+                        다만 성능상의 이슈와 함수, Math, Date와 같은 객체는 복사할 수 없기 때문에 실무에서는 lodash 같은 라이브러리를 사용한다고 함.
+
+                        *참고
+                        스프레드 문법은 얕은 복사이며,
+                        얕은 복사는 중첩된 객체가 있을 때 바깥 객체만 복사되고, 내부 객체는 참조 관계를 유지한다.
+                        때문에 객체의 속성을 새 객체에 할당할 때 사용한다.
+                        */
+                    );
+                    monster.maxHp = monster.hp;
+                    $monsterName.textContent = monster.name;
+                    $monsterHp.textContent = `HP: ${monster.hp}/${monster.maxHp}`;
+                    $monsterAtt.textContent = `ATT: ${monster.att}`;
+                } else if (input === '2') {
+                } else if (input === '3') {
+                }
+            });
+
+            $battleMenu.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const input = e.target['battle_input'].value;
+                if(input === '1') {
+                    hero.attack(monster);
+                    monster.attack(hero);
+                    $heroHp.textContent = `HP: ${hero.hp}/${hero.maxHp}`;
+                    $monsterHp.textContent = `HP: ${monster.hp}/${monster.maxHp}`;
+                    $message.textContent = `${hero.att}의 데미지를 주고, ${monster.att}의 데미지를 받았다.`
+                } else if (input === '2') {
+
+                } else if (input === '3') {
+                    
+                }
+            })
+        </script>
+    </body>
+</html>
